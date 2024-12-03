@@ -1,3 +1,0 @@
-[tool.uv]
-test = "pytest tests/"
-lint = "black src/ tests/"
