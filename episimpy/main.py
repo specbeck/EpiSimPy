@@ -5,12 +5,12 @@ from cli import display_banner, show_parameters_table, get_simulation_parameters
 display_banner()
     
 # Get user inputs for parameters
-population_size, beta, gamma, duration = get_simulation_parameters()
+model, population_size, params, duration = get_simulation_parameters()
     
 # Display the parameters back to the user
-show_parameters_table(population_size, beta, gamma, duration)
+show_parameters_table(model, population_size, params, duration)
     
 # Confirm and run simulation
-prompt_and_run(population_size, beta, gamma, duration)
+prompt_and_run(model, population_size, params, duration)
 
 

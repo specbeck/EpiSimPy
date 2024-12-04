@@ -1,8 +1,8 @@
-"""import curses
+import curses
 import time
 import math
 from random import uniform
-from enums import Status  # Import status enums from the main file
+from core import Status  # Import status enums from the main file
 
 # Billiards-inspired particle movement
 class Particle:
@@ -45,9 +45,9 @@ def animate(stdscr):
     height, width = stdscr.getmaxyx()
 
     # Parameters
-    num_particles = 1000
-    infection_radius = 1  # Spread radius for infection
-    recovery_time = 50  # Recovery time in frames
+    num_particles = 100
+    infection_radius = 3  # Spread radius for infection
+    recovery_time = 100  # Recovery time in frames
 
     # Initialize particles with random positions and velocities
     particles = [
@@ -100,87 +100,3 @@ def animate(stdscr):
 if __name__ == "__main__":
     curses.wrapper(animate)
 
-"""
-
-
-import curses
-import time
-import math
-from random import uniform
-from core import Individual, Population, Epidemic, Status  # Import existing classes
-
-def distance(ind1, ind2):
-    """Calculate Euclidean distance between two individuals."""
-    return math.sqrt((ind1.x - ind2.x) ** 2 + (ind1.y - ind2.y) ** 2)
-
-def animate(stdscr):
-    curses.curs_set(0)  # Hide cursor
-    stdscr.nodelay(True)  # Non-blocking input
-    height, width = stdscr.getmaxyx()
-
-    # Initialize epidemic parameters
-    num_individuals = 100
-    infection_radius = 2  # Spread radius for infection
-    recovery_time = 50  # Recovery time in frames
-
-    # Create a population
-    population = Population(num_individuals, width, height)
-
-    # Assign random velocities to individuals
-    for individual in population.individuals:
-        individual.vx = uniform(-1, 1)
-        individual.vy = uniform(-1, 1)
-
-    # Initialize the epidemic with one infected individual
-    epidemic = Epidemic(population)
-    epidemic.individuals[0].state = Status.INFECTIOUS
-    epidemic.infected_timers[epidemic.individuals[0]] = recovery_time
-
-    while True:
-        stdscr.clear()
-
-        # Update population movement
-        for individual in epidemic.individuals:
-            # Update position with velocity
-            individual.x += individual.vx
-            individual.y += individual.vy
-
-            # Bounce off walls
-            if individual.x <= 0 or individual.x >= width - 1:
-                individual.vx = -individual.vx
-            if individual.y <= 0 or individual.y >= height - 1:
-                individual.vy = -individual.vy
-
-        # Update epidemic states
-        for i, ind in enumerate(epidemic.individuals):
-            if ind.state == Status.INFECTIOUS:
-                # Spread infection
-                for other in epidemic.individuals:
-                    if other.state == Status.SUSCEPTIBLE and distance(ind, other) < infection_radius:
-                        epidemic.infect(other)
-
-                # Handle recovery
-                epidemic.infected_timers[ind] -= 1
-                if epidemic.infected_timers[ind] <= 0:
-                    epidemic.recover(ind)
-
-        # Draw individuals
-        for ind in epidemic.individuals:
-            emoji = "🟦" if ind.state == Status.SUSCEPTIBLE else "🟥" if ind.state == Status.INFECTIOUS else "🟩"
-            try:
-                stdscr.addstr(int(ind.y), int(ind.x), emoji)
-            except curses.error:
-                pass
-
-        # Display statistics
-        s_count = epidemic.susceptible_count()
-        i_count = epidemic.infected_count()
-        r_count = epidemic.recovered_count()
-        stats = f"Susceptible: {s_count} 🟦  Infected: {i_count} 🟥  Recovered: {r_count} 🟩"
-        stdscr.addstr(0, 0, stats[:width - 1])
-
-        stdscr.refresh()
-        time.sleep(0.1)
-
-if __name__ == "__main__":
-    curses.wrapper(animate)
