@@ -1,4 +1,3 @@
-from core import Epidemic
 from cli import display_banner, show_parameters_table, get_simulation_parameters, prompt_and_run
 
 """Main function for the interactive CLI."""

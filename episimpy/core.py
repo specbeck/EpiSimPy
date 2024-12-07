@@ -32,8 +32,6 @@ class Individual:
     def __init__(self, age, status=Status.SUSCEPTIBLE): # Initially every individual is susceptible
         self.age = age
         self.age_group = self.age_group()
-        #self.x = x
-        #self.y = y
         self.status = status
 
     def expose(self):
@@ -73,8 +71,6 @@ class Population:
     def __init__(self, size):
         self.size = size
         self.individuals = self.segregate_population()
-        # Initially, one individual is infectious
-        self.individuals[randint(0, self.size)].infect()
     
     def segregate_population(self):
         """
@@ -82,17 +78,15 @@ class Population:
         Assumes the average approximate population segregation percentages as follows:
         INFANTS: 7.5% ~ 8%, TEENS: 19%, ADULTS: 17.5% ~ 18%, MIDDLE-AGED: 45%, OLD-AGED: 11%
         """
-        percent_counts = (int((p / 100) * self.size) for p in [7.5, 19, 17.5, 45, 11])
+        percent_to_counts = (int((p / 100) * self.size) for p in [7.5, 19, 17.5, 45, 11])
         limits = ([1, 5], [6, 14], [15, 24], [25, 65], [66, 90])
-        # tags = (Groups.INFANTS, Groups.TEENS, Groups.ADULTS, Groups.MIDDLE, Groups.OLD)
 
         population = []
         
-        for count, limit in zip(percent_counts, limits):
+        for count, limit in zip(percent_to_counts, limits):
             group = [ Individual(randint(*limit)) for _ in range(count) ]
             population.extend(group)
         
-        #print(population)
         return population
     
 
@@ -119,6 +113,9 @@ class Epidemic:
         self.duration = duration
         self.simulation_set = None
         self.model = model 
+        # Initially, one individual is infectious
+        self.population.individuals[randint(0, self.population.size)].infect()
+    
 
     def run(self):
         """
@@ -136,17 +133,15 @@ class Epidemic:
 
         # Solve the SIR model
         if self.model == "SIR":
-            S, I, R = SIR.solve_sir(inits, self.params, time_points)
+            S, I, R, time_steps = SIR.solve_sir(inits, self.params, time_points)
             # Plot the epidemic curve
-            Plot.window([S, I, R], self.model, time_points)
-            Plot.terminal([S, I, R], self.model, time_points)
+            Plot.window([S, I, R], self.model, time_steps)
+            Plot.terminal([S, I, R], self.model, time_steps)
         elif self.model == "SEIRD":
-            S, E, I, R, D = SEIRD.solve_seird(inits, self.params, time_points)
+            S, E, I, R, D, time_steps = SEIRD.solve_seird(inits, self.params, time_points)
             
-            Plot.window([S, E, I, R, D], self.model, time_points)
-            Plot.terminal([S, E, I, R, D], self.model, time_points)
+            Plot.window([S, E, I, R, D], self.model, time_steps)
+            Plot.terminal([S, E, I, R, D], self.model, time_steps)
             
-        #S = int(S) Try to convert to integer
-
-        self.simulation_set = zip(time_points, S, I, R)
+        self.simulation_set = zip(time_steps, S, I, R)
 

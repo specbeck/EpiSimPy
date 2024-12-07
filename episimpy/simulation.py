@@ -1,101 +1,124 @@
-import curses
-import time
-import math
+from core import Epidemic, Status
 from random import uniform
-from core import Status  # Import status enums from the main file
+import math, time
+import curses
 
-# Billiards-inspired particle movement
-class Particle:
-    def __init__(self, x, y, vx, vy, state):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
-        self.state = state
-        self.timer = 10 # Recovery timer for infected individuals
 
-    def move(self, max_width, max_height):
-        """Update position with wall collision logic."""
-        self.x += self.vx
-        self.y += self.vy
+class Simulation(Epidemic):
+    """Simulates an Epidemic"""
+    def __init__(self, population_size, params, duration, dims, model="SIR"):
+        super().__init__(population_size, params, duration, model)
 
-        # Bounce off walls
-        if self.x <= 0 or self.x >= max_width - 1:
-            self.vx = -self.vx
-        if self.y <= 0 or self.y >= max_height - 1:
-            self.vy = -self.vy
+        # Simulation specific parameters
+        self.positions = {}
+        self.velocities = {}
+        self.recovery_times = {}
+        self.height, self.width = dims
+        self.initialize_simulator()
 
-    def infect(self, recovery_time):
-        """Change state to infected and set a recovery timer."""
-        self.state = Status.INFECTIOUS
-        self.timer = recovery_time
+    
+    def initialize_simulator(self):
+        """Initializes the simulation with velocities and postitions"""
+        for i, individual in enumerate(self.population.individuals):
+            self.positions[individual] = (uniform(0, self.width - 2), uniform(0, self.height - 1))     
+            self.velocities[individual] =  (uniform(-1, 1), uniform(-1, 1)) # Replace with group velocities later
+            if individual.status == Status.INFECTIOUS:
+                self.recovery_times[individual] = int(1/ self.params['gamma']) * 2 #self.params["gamma"] * self.duration # With age decrease immunity model later
+    
+    def movement(self):
+        """Handles movement of the individuals."""
+        for individual in self.population.individuals:
+            x, y = self.positions[individual]
+            vx, vy = self.velocities[individual]
 
-    def recover(self):
-        """Change state to recovered."""
-        self.state = Status.RECOVERED
-        self.timer = None
+            # Add the velocities to postitions
+            new_x = x + vx
+            new_y = y + vy
 
-def distance(p1, p2):
-    """Calculate Euclidean distance between two particles."""
-    return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
+            # Bouncing off walls/bounds of the simulation
+            if new_x <= 0 or new_x >= self.width:
+                vx = -vx
+            if new_y <= 0 or new_y >= self.height:
+                vy = -vy
+
+            # Update based on the bounce
+            self.velocities[individual] = (vx, vy)
+            self.positions[individual] =  (new_x, new_y)
+    
+    def spread_infection(self, infection_radius):
+        """Infection spreads based on the infection radius"""
+        # For the SIR model
+        for person in self.population.individuals:
+            if person.status == Status.INFECTIOUS:
+                for neighbour in self.population.individuals:
+                    if (neighbour.status == Status.SUSCEPTIBLE and self._distance(person, neighbour) < infection_radius):
+                        neighbour.infect()
+                        self.recovery_times[neighbour] = int(1/self.params["gamma"]) * 2
+
+        # For the SEIRD model
+        
+
+    def recover_individual(self):
+        """Recovers individual based on their recovery time"""
+        for individual, time in list(self.recovery_times.items()):
+            time -= 1
+            if time <= 0:
+                individual.recover()
+                del self.recovery_times[individual] 
+            else: 
+                self.recovery_times[individual] = time
+
+
+    def _distance(self, i1, i2):
+        """Calculate the distance between two individuals."""
+        x1, y1 = self.positions[i1]
+        x2, y2 = self.positions[i2]
+
+        return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+    def run(self, infection_radius):
+        """Run the simulation loop"""
+        self.movement()
+        self.spread_infection(infection_radius)
+        self.recover_individual()
+        #self.display_stats()
+
+    def display_stats(self):
+        """Displays the stats for the infection"""
+        s_count, i_count, r_count, _, _ = self.population.get_counts()
+        return f"SUSCEPTIBLE: {s_count}, INFECTED: {i_count}, RECOVERED: {r_count}"
+
 
 def animate(stdscr):
     curses.curs_set(0)  # Hide cursor
     stdscr.nodelay(True)  # Non-blocking input
-    height, width = stdscr.getmaxyx()
-
-    # Parameters
-    num_particles = 100
-    infection_radius = 3  # Spread radius for infection
-    recovery_time = 100  # Recovery time in frames
-
-    # Initialize particles with random positions and velocities
-    particles = [
-        Particle(
-            x=uniform(0, width - 1),
-            y=uniform(0, height - 1),
-            vx=uniform(-1, 1),
-            vy=uniform(-1, 1),
-            state=Status.SUSCEPTIBLE if i > 0 else Status.INFECTIOUS
-        )
-        for i in range(num_particles)
-    ]
+    scrdims = stdscr.getmaxyx() 
+    sim = Simulation(population_size=100, params={"beta": 0.2, "gamma": 0.1}, duration=100, dims=scrdims)
+    infection_radius = 3
 
     while True:
+        key = stdscr.getch()
+        if key == ord('q'):  # Quit when 'q' is pressed
+            break
         stdscr.clear()
+        sim.run(infection_radius)
 
-        # Update and draw particles
-        for particle in particles:
-            particle.move(width, height)
-
-            # Infection spread
-            if particle.state == Status.INFECTIOUS:
-                for other in particles:
-                    if other.state == Status.SUSCEPTIBLE and distance(particle, other) < infection_radius:
-                        other.infect(recovery_time)
-
-            # Recovery
-            if particle.state == Status.INFECTIOUS:
-                particle.timer -= 1
-                if particle.timer <= 0:
-                    particle.recover()
-
-            # Draw particle
-            emoji = "🟦" if particle.state == Status.SUSCEPTIBLE else "🟥" if particle.state == Status.INFECTIOUS else "🟩"
+        # Display individuals
+        for individual, (x, y) in sim.positions.items():
+            emoji = (
+                "🟦" if individual.status == Status.SUSCEPTIBLE else
+                "🟥" if individual.status == Status.INFECTIOUS else
+                "🟩"
+            )
             try:
-                stdscr.addstr(int(particle.y), int(particle.x), emoji)
+                stdscr.addstr(int(y), int(x), emoji)
             except curses.error:
                 pass
 
-        # Display statistics
-        s_count = sum(1 for p in particles if p.state == Status.SUSCEPTIBLE)
-        i_count = sum(1 for p in particles if p.state == Status.INFECTIOUS)
-        r_count = sum(1 for p in particles if p.state == Status.RECOVERED)
-        stats = f"Susceptible: {s_count} 🟦  Infected: {i_count} 🟥  Recovered: {r_count} 🟩"
-        stdscr.addstr(0, 0, stats[:width - 1])
-
+        stdscr.addstr(0, 0, sim.display_stats())
         stdscr.refresh()
         time.sleep(0.1)
+
 
 if __name__ == "__main__":
     curses.wrapper(animate)

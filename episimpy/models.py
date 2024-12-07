@@ -18,19 +18,19 @@ class SIR:
         return [dS, dI, dR]
 
     @staticmethod
-    def solve_sir(inits, params, time_points):
+    def solve_sir(inits, params, time_steps):
         """
         Solves the SIR differential equations.
         """
         # Solve the equations using scipy's solve_ivp
         result = solve_ivp(
             fun=lambda t, y: SIR.sir_model(t, y, params),
-            t_span=(time_points[0], time_points[-1]),
+            t_span=(time_steps[0], time_steps[-1]),
             y0=inits,
-            t_eval=time_points
+            t_eval=time_steps
         )
-        print(result.y) 
-        return result.y
+        S, I, R = result.y
+        return S, I, R, result.t
         
 
 
@@ -55,18 +55,18 @@ class SEIRD:
         return [dS, dE, dI, dR, dD]
 
     @staticmethod
-    def solve_seird(inits, params, time_points):
+    def solve_seird(inits, params, time_steps):
         """
         Solves the SEIRD differential equations.
         """
         # Solve the equations using scipy's solve_ivp
         result = solve_ivp(
             fun=lambda t, y: SEIRD.seird_model(t, y, params),
-            t_span=(time_points[0], time_points[-1]),
+            t_span=(time_steps[0], time_steps[-1]),
             y0=inits,
-            t_eval=time_points
+            t_eval=time_steps
         )
 
         S, E, I, R, D = result.y
-        return S, E, I, R, D
+        return S, E, I, R, D, result.t
     
