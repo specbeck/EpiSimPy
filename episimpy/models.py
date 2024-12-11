@@ -1,4 +1,4 @@
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp  # To solve differential equations
 
 
 class SIR:
@@ -11,9 +11,9 @@ class SIR:
         beta = params["beta"]
         gamma = params["gamma"]
 
-        dS = -beta * S * I # Susceptible to infected
-        dI = beta * S * I - gamma * I # Infected to Recovered/Removed
-        dR = gamma * I # Infected to Recovered
+        dS = -beta * S * I  # Susceptible to infected
+        dI = beta * S * I - gamma * I  # Infected to Recovered/Removed
+        dR = gamma * I  # Infected to Recovered
 
         return [dS, dI, dR]
 
@@ -22,17 +22,14 @@ class SIR:
         """
         Solves the SIR differential equations.
         """
-        # Solve the equations using scipy's solve_ivp
         result = solve_ivp(
             fun=lambda t, y: SIR.sir_model(t, y, params),
             t_span=(time_steps[0], time_steps[-1]),
             y0=inits,
-            t_eval=time_steps
+            t_eval=time_steps,
         )
         S, I, R = result.y
         return S, I, R, result.t
-        
-
 
 
 class SEIRD:
@@ -64,9 +61,8 @@ class SEIRD:
             fun=lambda t, y: SEIRD.seird_model(t, y, params),
             t_span=(time_steps[0], time_steps[-1]),
             y0=inits,
-            t_eval=time_steps
+            t_eval=time_steps,
         )
 
         S, E, I, R, D = result.y
         return S, E, I, R, D, result.t
-    
