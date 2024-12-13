@@ -1,0 +1,9 @@
+rich
+plotext
+matplotlib
+enum
+curses
+time 
+math
+random
+scipy

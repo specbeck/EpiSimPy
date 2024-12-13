@@ -3,10 +3,11 @@ from random import uniform
 import math, time
 import curses
 
+
 class Simulation(Epidemic):
     """Simulates an Epidemic"""
 
-    def __init__(self, population_size, params, duration, dims, model="SIR"):
+    def __init__(self, population_size, params, duration, dims, simtype="normal", model="SIR"):
         super().__init__(population_size, params, duration, model)
 
         # Simulation specific parameters
@@ -14,6 +15,7 @@ class Simulation(Epidemic):
         self.velocities = {}
         self.recovery_times = {}
         self.height, self.width = dims
+        self.simtype = simtype
         self.initialize_simulator()
 
     def initialize_simulator(self):
@@ -23,14 +25,21 @@ class Simulation(Epidemic):
                 uniform(0, self.width - 2),
                 uniform(0, self.height - 1),
             )
+            factor = 10
+            velocity = (
+                (
+                    -individual.age_group.value[0] / factor,
+                    individual.age_group.value[0] / factor,
+                )
+                if self.simtype == "real"
+                else (-1, 1)
+            )
             self.velocities[individual] = (
-                uniform(-1, 1),
-                uniform(-1, 1),
+                uniform(*velocity),
+                uniform(*velocity),
             )  # Replace with group velocities later
             if individual.status == Status.INFECTIOUS:
-                self.recovery_times[individual] = (
-                    int(1 / self.params["gamma"]) * 6
-                )
+                self.recovery_times[individual] = int(1 / self.params["gamma"]) * 6
 
     def movement(self):
         """Handles movement of the individuals."""
@@ -52,7 +61,7 @@ class Simulation(Epidemic):
             self.velocities[individual] = (vx, vy)
             self.positions[individual] = (new_x, new_y)
 
-    def spread_infection(self, infection_radius):
+    def spread_infection(self):
         """Infection spreads based on the infection radius"""
         # For the SIR model
         for person in self.population.individuals:
@@ -60,7 +69,8 @@ class Simulation(Epidemic):
                 for neighbour in self.population.individuals:
                     if (
                         neighbour.status == Status.SUSCEPTIBLE
-                        and self._distance(person, neighbour) < infection_radius
+                        and self._distance(person, neighbour)
+                        < self.get_infection_radius()
                     ):
                         neighbour.infect()
                         self.recovery_times[neighbour] = (
@@ -79,6 +89,20 @@ class Simulation(Epidemic):
             else:
                 self.recovery_times[individual] = time
 
+    def get_infection_radius(self):
+        """Determines infection radius based on beta, the infection rate"""
+        beta = self.params["beta"]  # Infectious rate
+        if beta < 0.0005:
+            return 1
+        elif beta < 0.001:
+            return 2
+        elif beta < 0.005:
+            return 3
+        elif beta <= 0.01:
+            return 4
+        else:
+            return 5
+
     def _distance(self, i1, i2):
         """Calculate the distance between two individuals."""
         x1, y1 = self.positions[i1]
@@ -86,44 +110,59 @@ class Simulation(Epidemic):
 
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    def run(self, infection_radius):
+    def run(self):
         """Run the simulation loop"""
         self.movement()
-        self.spread_infection(infection_radius)
+        self.spread_infection()
         self.recover_individual()
         # self.display_stats()
 
     def display_stats(self):
         """Displays the stats for the infection"""
         s_count, i_count, r_count, _, _ = self.population.get_counts()
-        return f"Susceptible: {s_count} 🟦  Infected: {i_count} 🟥  Recovered: {r_count} 🟩"
+
+        return (
+            f"Susceptible: {s_count} 😊 Infected: {i_count} 🤢  Recovered: {r_count} 😷"
+            if self.simtype == "real"
+            else f"Susceptible: {s_count} 🟦  Infected: {i_count} 🟥  Recovered: {r_count} 🟩"
+        )
 
 
-def animate(stdscr):
+def animate(stdscr, size, params, duration, simtype):
+    """The main animation function that handles dynamic arguments given by the user"""
+
     curses.curs_set(0)  # Hide cursor
     stdscr.nodelay(True)  # Non-blocking input
-    scrdims = stdscr.getmaxyx()
+    scrdims = stdscr.getmaxyx()  # Get screen dimensions
     sim = Simulation(
-        population_size=100,
-        params={"beta": 0.2, "gamma": 0.1},
-        duration=100,
+        population_size=size,
+        params=params,
+        duration=duration,
         dims=scrdims,
+        simtype=simtype,
     )
-    infection_radius = 3
 
     while True:
         key = stdscr.getch()
         if key == ord("q"):  # Quit when 'q' is pressed
             break
         stdscr.clear()
-        sim.run(infection_radius)
+        sim.run()
 
         # Display individuals
         for individual, (x, y) in sim.positions.items():
             emoji = (
-                "🟦"
-                if individual.status == Status.SUSCEPTIBLE
-                else "🟥" if individual.status == Status.INFECTIOUS else "🟩"
+                (
+                    individual.age_group.value[1]
+                    if individual.status == Status.SUSCEPTIBLE
+                    else "🤢" if individual.status == Status.INFECTIOUS else "😷"
+                )
+                if simtype == "real"
+                else (
+                    "🟦"
+                    if individual.status == Status.SUSCEPTIBLE
+                    else "🟥" if individual.status == Status.INFECTIOUS else "🟩"
+                )
             )
             try:
                 stdscr.addstr(int(y), int(x), emoji)
@@ -135,5 +174,12 @@ def animate(stdscr):
         time.sleep(0.1)
 
 
+def run(n=100, p={"beta": 0.02, "gamma": 0.1}, t=100, simtype="normal"):
+    """Runs the actual simulation with user defined parameters"""
+    curses.wrapper(
+        lambda stdscr: animate(stdscr, size=n, params=p, duration=t, simtype=simtype)
+    )
+
+
 if __name__ == "__main__":
-    curses.wrapper(animate)
+    run(n=int(input("Enter individuals: ")), simtype=input("Enter simtype: "))

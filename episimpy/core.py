@@ -8,7 +8,7 @@ from visualisations import Plot
 # Custom enums for classes
 class Status(Enum):
     """
-    Defines custom statuses of individuals wrt the pandemic
+    Defines custom status of individuals wrt the pandemic
     """
 
     SUSCEPTIBLE = "blue"
@@ -21,23 +21,23 @@ class Status(Enum):
 # Custom enum for groups
 class Groups(Enum):
     """
-    Defines age groups for population segregation, with values representing mobility
+    Defines age groups for population segregation, with values representing mobility and character
     """
 
-    INFANTS = 0
-    TEENS = 10
-    ADULTS = 15
-    MIDDLE = 20
-    OLD = 5
+    INFANTS = [0, '👶']
+    TEENS = [3, '🧒']
+    ADULTS = [4, '']
+    MIDDLE = [5, '👨']
+    OLD = [1, '🧓']
 
 
 class Individual:
     """A single individual."""
 
     def __init__(
-        self, age, status=Status.SUSCEPTIBLE
+        self, age, status: Status=Status.SUSCEPTIBLE
     ):  # Initially every individual is susceptible
-        self.age = age
+        self._age = age
         self.age_group = self.age_group()
         self.status = status
 
@@ -60,13 +60,13 @@ class Individual:
     # Helper functions
     def age_group(self):
         """Segregates individuals into age groups based on their age."""
-        if self.age > 64:
+        if self._age > 64:
             return Groups.OLD
-        elif self.age > 24:
+        elif self._age > 24:
             return Groups.MIDDLE
-        elif self.age > 14:
+        elif self._age > 14:
             return Groups.ADULTS
-        elif self.age > 5:
+        elif self._age > 5:
             return Groups.TEENS
         else:
             return Groups.INFANTS
@@ -133,7 +133,7 @@ class Epidemic:
 
         if self.model == "SEIRD":
             inits = [s_count, e_count, i_count, r_count, d_count]
-
+    
         # Take varying time points
         time_points = np.arange(0, self.duration + 0.1, 0.1)
 
@@ -143,12 +143,12 @@ class Epidemic:
             # Plot the epidemic curve
             Plot.window([S, I, R], self.model, time_steps)
             Plot.terminal([S, I, R], self.model, time_steps)
+
         elif self.model == "SEIRD":
             S, E, I, R, D, time_steps = SEIRD.solve_seird(
                 inits, self.params, time_points
             )
 
             Plot.window([S, E, I, R, D], self.model, time_steps)
-            Plot.terminal([S, E, I, R, D], self.model, time_steps)
+            # Plot.terminal([S, E, I, R, D], self.model, time_steps)
 
-        self.simulation_set = zip(time_steps, S, I, R)

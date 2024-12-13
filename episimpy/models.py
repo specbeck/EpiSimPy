@@ -2,8 +2,18 @@ from scipy.integrate import solve_ivp  # To solve differential equations
 
 
 class SIR:
+    """
+    The SIR Model.
+    S: Susceptible individuals prone to the infection
+    I: Infected individuals capable of spreading infection
+    R: Recoverd/Removed individuals do not turn susceptible
+
+    """
+
     @staticmethod
-    def sir_model(t, x, params):
+    def sir_model(
+        t: list[float], x: list[int], params: dict[str, float]
+    ) -> list[float]:
         """
         Differential equations encompassing the SIR model.
         """
@@ -18,7 +28,7 @@ class SIR:
         return [dS, dI, dR]
 
     @staticmethod
-    def solve_sir(inits, params, time_steps):
+    def solve_sir(inits: list[int], params: dict[str, float], time_steps: list[float]):
         """
         Solves the SIR differential equations.
         """
@@ -41,13 +51,13 @@ class SEIRD:
         S, E, I, R, D = x
         beta = params["beta"]
         sigma = params["sigma"]
-        r = params["gamma"]
-        mu = params["delta"]
+        gamma = params["gamma"]
+        mu = params["mu"]
 
         dS = -beta * S * I  # Susceptible to Exposed
         dE = beta * S * I - sigma * E  # Exposed to Infectious
-        dI = sigma * E - r * I - mu * I  # Infectious to Recovered or Deceased
-        dR = r * I  # Infectious to Recovered
+        dI = sigma * E - gamma * I - mu * I  # Infectious to Recovered or Deceased
+        dR = gamma * I  # Infectious to Recovered
         dD = mu * I  # Infectious to Deceased
         return [dS, dE, dI, dR, dD]
 
