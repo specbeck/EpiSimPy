@@ -7,3 +7,4 @@ time
 math
 random
 scipy
+numpy

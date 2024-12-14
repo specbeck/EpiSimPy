@@ -3,7 +3,7 @@ from random import uniform
 import math, time
 import curses
 
-
+# Inherits the Epidemic class
 class Simulation(Epidemic):
     """Simulates an Epidemic"""
 
@@ -20,7 +20,7 @@ class Simulation(Epidemic):
 
     def initialize_simulator(self):
         """Initializes the simulation with velocities and postitions"""
-        for i, individual in enumerate(self.population.individuals):
+        for i, individual in enumerate(self.population.individuals): # Fill the velocities and positions dictionaries
             self.positions[individual] = (
                 uniform(0, self.width - 2),
                 uniform(0, self.height - 1),
@@ -31,14 +31,14 @@ class Simulation(Epidemic):
                     -individual.age_group.value[0] / factor,
                     individual.age_group.value[0] / factor,
                 )
-                if self.simtype == "real"
+                if self.simtype == "real" # If simtype is real, customize velocities based on age group
                 else (-1, 1)
             )
             self.velocities[individual] = (
                 uniform(*velocity),
                 uniform(*velocity),
-            )  # Replace with group velocities later
-            if individual.status == Status.INFECTIOUS:
+            )
+            if individual.status == Status.INFECTIOUS: # Set initialally infected individual's recovery time
                 self.recovery_times[individual] = int(1 / self.params["gamma"]) * 6
 
     def movement(self):
@@ -47,7 +47,7 @@ class Simulation(Epidemic):
             x, y = self.positions[individual]
             vx, vy = self.velocities[individual]
 
-            # Add the velocities to postitions
+            # Add the velocities to postitions to simulate movement
             new_x = x + vx
             new_y = y + vy
 
@@ -57,7 +57,7 @@ class Simulation(Epidemic):
             if new_y <= 0 or new_y >= self.height:
                 vy = -vy
 
-            # Update based on the bounce
+            # Update wrt to the bounce
             self.velocities[individual] = (vx, vy)
             self.positions[individual] = (new_x, new_y)
 
@@ -66,7 +66,7 @@ class Simulation(Epidemic):
         # For the SIR model
         for person in self.population.individuals:
             if person.status == Status.INFECTIOUS:
-                for neighbour in self.population.individuals:
+                for neighbour in self.population.individuals: # Infect if in the infection radius
                     if (
                         neighbour.status == Status.SUSCEPTIBLE
                         and self._distance(person, neighbour)
@@ -81,7 +81,7 @@ class Simulation(Epidemic):
 
     def recover_individual(self):
         """Recovers individual based on their recovery time"""
-        for individual, time in list(self.recovery_times.items()):
+        for individual, time in list(self.recovery_times.items()): # Count down recovery time for the infected people
             time -= 1
             if time <= 0:
                 individual.recover()

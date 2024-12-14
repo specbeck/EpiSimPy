@@ -26,7 +26,7 @@ class Groups(Enum):
 
     INFANTS = [0, '👶']
     TEENS = [3, '🧒']
-    ADULTS = [4, '']
+    ADULTS = [4, '👧']
     MIDDLE = [5, '👨']
     OLD = [1, '🧓']
 

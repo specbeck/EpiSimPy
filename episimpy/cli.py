@@ -78,30 +78,31 @@ def prompt_and_run(
         )
         == "y".casefold()
     ):
-        console.print("\n[bold green]Running simulation...[/bold green]")
+        console.print("\n[bold green]Running plots...[/bold green]")
 
         # Run the epidemic simulation
         epidemic = Epidemic(population_size, params, duration, model)
         epidemic.run()
 
-        simtype = Prompt.ask(
-            "What simulation style would you prefer",
-            choices=["normal", "real"],
-            default="normal",
+        console.print("[bold green]Plotting complete![/bold green]")
+    else:
+        console.print("[bold red]Plotting aborted![/bold red]")
+
+    simtype = Prompt.ask(
+        "What simulation style would you prefer",
+        choices=["normal", "real"],
+        default="normal",
+    )
+        
+    sim_choice = Prompt.ask(
+            "\n[bold yellow]Run the stochastic simulation with same parameters?[/bold yellow]",
+            choices=["y", "n", "x"],
+            default="n",
         )
 
-        if (
-            Prompt.ask(
-                "\n[bold yellow]Run the stochastic simulation with same parameters?[/bold yellow]",
-                choices=["y", "n"],
-                default="n",
-            )
-            == "y".casefold()
-        ):
-            run(population_size, params, duration, simtype)
-        else:
-            run(simtype=simtype)
-
-        console.print("[bold green]Simulation complete![/bold green]")
+    if (sim_choice == "y".casefold()):
+        run(population_size, params, duration, simtype)
+    elif (sim_choice == "x".casefold()):
+        pass
     else:
-        console.print("[bold red]Simulation aborted![/bold red]")
+        run(simtype=simtype)
