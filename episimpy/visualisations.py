@@ -5,7 +5,7 @@ import time
 
 class Plot:
     @staticmethod
-    def window(values, model, time, delay=0.1, step=10):
+    def window(values, model, time, delay=0.1, step=1):
         """
         Plot the epidemic curve namely the values of individuals over time on a seperate window
         """

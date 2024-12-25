@@ -118,7 +118,6 @@ class Epidemic:
         self.population = Population(population_size)
         self.params = params
         self.duration = duration
-        self.simulation_set = None
         self.model = model
         # Initially, one individual is infectious
         self.population.individuals[randint(0, self.population.size)].infect()

@@ -6,6 +6,7 @@ dist/
 wheels/
 *.egg-info
 tests/
+epidemic_sim/
 
 # Virtual environments
 .venv

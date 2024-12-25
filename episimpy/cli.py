@@ -87,22 +87,23 @@ def prompt_and_run(
         console.print("[bold green]Plotting complete![/bold green]")
     else:
         console.print("[bold red]Plotting aborted![/bold red]")
-
-    simtype = Prompt.ask(
-        "What simulation style would you prefer",
-        choices=["normal", "real"],
-        default="normal",
-    )
-        
-    sim_choice = Prompt.ask(
-            "\n[bold yellow]Run the stochastic simulation with same parameters?[/bold yellow]",
-            choices=["y", "n", "x"],
-            default="n",
+    
+    if model == "SIR":
+        simtype = Prompt.ask(
+            "What simulation style would you prefer",
+            choices=["normal", "real"],
+            default="normal",
         )
+        
+        sim_choice = Prompt.ask(
+                "\n[bold yellow]Run the stochastic simulation with same parameters?[/bold yellow]",
+                choices=["y", "n", "x"],
+                default="n",
+            )
 
-    if (sim_choice == "y".casefold()):
-        run(population_size, params, duration, simtype)
-    elif (sim_choice == "x".casefold()):
-        pass
-    else:
-        run(simtype=simtype)
+        if (sim_choice == "y".casefold()):
+            run(population_size, params, duration, simtype)
+        elif (sim_choice == "x".casefold()):
+            pass
+        else:
+            run(simtype=simtype)
